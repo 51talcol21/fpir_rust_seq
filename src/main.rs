@@ -1,6 +1,13 @@
+mod reader {
+    pub mod fasta;
+    pub mod gc_content;
+}
+
 use clap::Parser;
 use std::str::FromStr;
 use std::fmt;
+
+use crate::reader::gc_content::{calculate_gc_content, GENRecord};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {
@@ -52,7 +59,26 @@ fn main() {
         Ok(Format::Fastq)
     };
 
-    println!("The input is {} and the file format is {}!", args.input, format.unwrap());
+    match format {
+        Ok(result) => {
+            println!("The input is {} and the file format is {}!", args.input, result);
+            match result {
+                Format::Fasta => {
+                    if let Ok(_result) = reader::fasta::parse_fasta_file(&args.input) {
+                        println!("Successfully ran {:?}", _result);
+                        for each_seq in _result.iter() {
+                            let ourRec = GENRecord::FASTARecord(each_seq.clone());
+                            println!("This is{:?}", calculate_gc_content(&ourRec));
+                        }
+                    }
+                }
+                Format::Fastq => {
+                    println!("Not implemented yet :(")
+                }
+            }
+        }
+        Err(error) => println!("Error: {}", error),
+    }
 
     ()
 }
