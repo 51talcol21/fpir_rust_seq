@@ -81,27 +81,35 @@ fn main() {
             println!("The input is {} and the file format is {}.", args.input, result);
             match result {
                 Format::Fasta => {
-                    if let Ok(_result) = reader::fasta::parse_fasta_file(&args.input) {
-                        for each_seq in _result.iter() {
-                            let our_record = GENRecord::FASTARecord(each_seq.clone());
+                    if let Ok(result) = reader::fasta::parse_fasta_file(&args.input) {
+                        for each_seq in result.sequences.iter() {
+                            let our_record = &each_seq;
 
                             if let GENRecord::FASTARecord(rec) = &our_record {
                                 let gc_percent = calculate_gc_content(&our_record);
                                 println!("GC content for Record (ID: {}) is {:.2}%", rec.id, gc_percent);
                             }
                         }
+                        println!("Final Stats");
+                        println!("Mean: {:?}nt", result.sequences_mean);
+                        println!("Min: {:?}nt", result.sequences_min);
+                        println!("Max: {:?}nt", result.sequences_max);
                     }
                 }
                 Format::Fastq => {
-                    if let Ok(_result) = reader::fastq::parse_fastq_file(&args.input) {
-                        for each_seq in _result.iter() {
-                            let our_record = GENRecord::FASTQRecord(each_seq.clone());
+                    if let Ok(result) = reader::fastq::parse_fastq_file(&args.input) {
+                        for each_seq in result.sequences.iter() {
+                            let our_record = &each_seq;
 
                             if let GENRecord::FASTQRecord(rec) = &our_record {
                                 let gc_percent = calculate_gc_content(&our_record);
                                 println!("GC content for Record (ID: {}) is {:.2}%", rec.id, gc_percent);
                             }
                         }
+                        println!("Final Stats");
+                        println!("Mean: {:?}nt", result.sequences_mean);
+                        println!("Min: {:?}nt", result.sequences_min);
+                        println!("Max: {:?}nt", result.sequences_max);
                     }
                 }
             }
