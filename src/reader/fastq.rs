@@ -3,13 +3,15 @@ use std::fs::File;
 use std::fmt;
 use std::io::{self, BufRead};
 
-use super::gc_content::GENRecord;
+use super::fasta::Percent;
+use super::gc_content::{GENRecord, calculate_gc_content};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FASTQRecord {
     pub id: String,
     pub sequence: String,
-    pub quality: String
+    pub quality: String,
+    pub gc_percent: Percent,
 }
 
 impl std::fmt::Display for FASTQRecord {
@@ -32,7 +34,7 @@ pub fn parse_fastq_file(path: &str) -> std::io::Result<SequenceINFO> {
 
     let mut sequence: String = String::new();
 
-    let mut sequences_total: Vec<FASTQRecord> = Vec::new();
+    let mut sequences_total: Vec<GENRecord> = Vec::new();
     let mut max_sequence_len = i64::MIN;
     let mut min_sequence_len = i64::MAX;
     let mut mean_sequence_len = 0;
@@ -44,12 +46,14 @@ pub fn parse_fastq_file(path: &str) -> std::io::Result<SequenceINFO> {
                 if seq_line == "+" {
                     if let Some(Ok(seq_line)) = lines.next() {
                         let mut quality = seq_line[..].trim().to_string();
-                        let new_struct = FASTQRecord {
+                        let mut new_struct = FASTQRecord {
                             id: id.clone(),
                             sequence: sequence.clone(),
-                            quality: quality.clone()
+                            quality: quality.clone(),
+                            gc_percent: Percent(0),
                         };
-                        sequences_total.push(new_struct);
+                        new_struct.gc_percent = Percent((calculate_gc_content(&GENRecord::FASTQRecord(new_struct.clone())) * 1000.00) as u32);
+                        sequences_total.push(GENRecord::FASTQRecord(new_struct));
                         max_sequence_len = max(max_sequence_len, sequence.len() as i64);
                         min_sequence_len = min(min_sequence_len, sequence.len() as i64);
                         mean_sequence_len = (mean_sequence_len + sequence.len()) / sequences_total.len();
@@ -67,7 +71,7 @@ pub fn parse_fastq_file(path: &str) -> std::io::Result<SequenceINFO> {
 
     let sequences_genrecord: Vec<GENRecord> = sequences_total
         .into_iter()
-        .map(|rec| GENRecord::FASTQRecord(rec))
+        .map(|rec| rec)
         .collect();
 
     let sequence_struct = SequenceINFO {

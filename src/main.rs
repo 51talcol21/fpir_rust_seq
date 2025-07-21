@@ -9,7 +9,7 @@ use reader::fastq::SequenceINFO;
 use std::str::FromStr;
 use std::fmt;
 
-use crate::reader::gc_content::{calculate_gc_content, GENRecord};
+use crate::reader::gc_content::{GENRecord};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {
@@ -103,8 +103,7 @@ fn main() {
                             let our_record = &each_seq;
 
                             if let GENRecord::FASTARecord(rec) = &our_record {
-                                let gc_percent = calculate_gc_content(&our_record);
-                                println!("GC content for Record (ID: {}) is {:.2}%", rec.id, gc_percent);
+                                println!("GC percent for record (ID: {}) is {}", rec.id, rec.gc_percent);
                             }
                         }
                         println!("{}", result);
@@ -116,8 +115,7 @@ fn main() {
                             let our_record = &each_seq;
 
                             if let GENRecord::FASTQRecord(rec) = &our_record {
-                                let gc_percent = calculate_gc_content(&our_record);
-                                println!("GC content for Record (ID: {}) is {:.2}%", rec.id, gc_percent);
+                                println!("GC percent for record (ID: {}) is {}", rec.id, rec.gc_percent);
                             }
                         }
                         println!("{}", result);

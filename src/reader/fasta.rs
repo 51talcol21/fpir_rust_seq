@@ -4,17 +4,26 @@ use std::fs::File;
 use std::io::{self, BufRead};
 
 use super::fastq::SequenceINFO;
-use super::gc_content::GENRecord;
+use super::gc_content::{GENRecord, calculate_gc_content};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FASTARecord {
     pub id: String,
     pub sequence: String,
+    pub gc_percent: Percent,
 }
+#[derive(Debug, Eq, Clone, PartialEq)]
+pub struct Percent(pub u32);
 
 impl std::fmt::Display for FASTARecord {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Sequence ID:'{}' \n Sequence:'{}", self.id, self.sequence)
+    }
+}
+
+impl std::fmt::Display for Percent {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}%", self.0 as f32 / 1000.0)
     }
 }
 
@@ -24,7 +33,7 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
     let mut lines = reader.lines();
 
     let mut sequence: String = String::new();
-    let mut sequences_total: Vec<FASTARecord> = Vec::new();
+    let mut sequences_total: Vec<GENRecord> = Vec::new();
     let mut max_sequence_len = i64::MIN;
     let mut min_sequence_len = i64::MAX;
     let mut mean_sequence_len = 0;
@@ -33,11 +42,13 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
     while let Some(Ok(line)) = lines.next() {
         if line.starts_with(">") {
             if !id.is_empty() {
-                let new_struct = FASTARecord {
+                let mut new_struct = FASTARecord {
                     id: id.clone(),
-                    sequence: sequence.clone()
+                    sequence: sequence.clone(),
+                    gc_percent: Percent(0 as u32)
                 };
-                sequences_total.push(new_struct);
+                new_struct.gc_percent = Percent((calculate_gc_content(&GENRecord::FASTARecord(new_struct.clone())) * 1000.00) as u32);
+                sequences_total.push(GENRecord::FASTARecord(new_struct));
                 max_sequence_len = max(max_sequence_len, sequence.len() as i64);
                 min_sequence_len = min(min_sequence_len, sequence.len() as i64);
                 mean_sequence_len = (mean_sequence_len + sequence.len()) / sequences_total.len();
@@ -53,16 +64,17 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
 
     let new_struct = FASTARecord {
         id: id.clone(),
-        sequence: sequence.clone()
+        sequence: sequence.clone(),
+        gc_percent: Percent(0 as u32),
     };
-    sequences_total.push(new_struct);
+    sequences_total.push(GENRecord::FASTARecord(new_struct));
     max_sequence_len = max(max_sequence_len, sequence.len() as i64);
     min_sequence_len = min(min_sequence_len, sequence.len() as i64);
     mean_sequence_len = (mean_sequence_len + sequence.len()) / sequences_total.len();
 
     let sequences_genrecord: Vec<GENRecord> = sequences_total
         .into_iter()
-        .map(|rec| GENRecord::FASTARecord(rec))
+        .map(|rec| rec)
         .collect();
 
     let sequence_struct = SequenceINFO {
