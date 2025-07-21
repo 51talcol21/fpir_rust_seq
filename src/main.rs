@@ -50,35 +50,57 @@ struct Args {
     format: Option<String>,
 }
 
+fn detect_format_from_filename(filename: &str) -> Option<&'static str> {
+    if filename.ends_with(".fastq") || filename.ends_with(".fastq.gz") {
+        Some("FASTQ")
+    } else if filename.ends_with(".fasta") || filename.ends_with(".fasta.gz") || filename.ends_with(".fa") {
+        Some("FASTA")
+    } else {
+        None
+    }
+}
+
 fn main() {
     let args = Args::parse();
+    let path = &args.input;
 
     let format = if let Some(fmt) = args.format {
         Format::from_str(&fmt)
     } else {
-        println!("We will have to auto detect it!");
-        Ok(Format::Fastq)
+        match detect_format_from_filename(path) {
+            Some(ext) => Format::from_str(ext),
+            None => {
+                eprintln!("Could not auto-detect format from file extension.");
+                std::process::exit(1);
+            }
+        }
     };
 
     match format {
         Ok(result) => {
-            println!("The input is {} and the file format is {}!", args.input, result);
+            println!("The input is {} and the file format is {}.", args.input, result);
             match result {
                 Format::Fasta => {
                     if let Ok(_result) = reader::fasta::parse_fasta_file(&args.input) {
-                        println!("Successfully ran {:?}", _result);
                         for each_seq in _result.iter() {
                             let our_record = GENRecord::FASTARecord(each_seq.clone());
-                            println!("GC content is{:?}%", calculate_gc_content(&our_record));
+
+                            if let GENRecord::FASTARecord(rec) = &our_record {
+                                let gc_percent = calculate_gc_content(&our_record);
+                                println!("GC content for Record (ID: {}) is {:.2}%", rec.id, gc_percent);
+                            }
                         }
                     }
                 }
                 Format::Fastq => {
                     if let Ok(_result) = reader::fastq::parse_fastq_file(&args.input) {
-                        println!("Successfully ran {:?}", _result);
                         for each_seq in _result.iter() {
                             let our_record = GENRecord::FASTQRecord(each_seq.clone());
-                            println!("GC content is{:?}%", calculate_gc_content(&our_record));
+
+                            if let GENRecord::FASTQRecord(rec) = &our_record {
+                                let gc_percent = calculate_gc_content(&our_record);
+                                println!("GC content for Record (ID: {}) is {:.2}%", rec.id, gc_percent);
+                            }
                         }
                     }
                 }

@@ -1,5 +1,6 @@
 use super::{fasta::FASTARecord, fastq::{FASTQRecord}};
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GENRecord {
     FASTARecord(FASTARecord),
     FASTQRecord(FASTQRecord)

@@ -44,7 +44,5 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<Vec<FASTARecord>> {
     };
     sequences_total.push(new_struct);
 
-    println!("Sequence is {:?}", sequences_total);
-
     Ok(sequences_total)
 }

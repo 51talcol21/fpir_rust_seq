@@ -38,7 +38,5 @@ pub fn parse_fastq_file(path: &str) -> std::io::Result<Vec<FASTQRecord>> {
         }
     }
 
-    println!("Sequence is {:?}", sequences_total);
-
     Ok(sequences_total)
 }
