@@ -1,12 +1,14 @@
-use super::fasta::FASTARecord;
+use super::{fasta::FASTARecord, fastq::{FASTQRecord}};
 
 pub enum GENRecord {
     FASTARecord(FASTARecord),
+    FASTQRecord(FASTQRecord)
 }
 
 pub fn calculate_gc_content(record: &GENRecord) -> f64 {
     let sequence = match record {
         GENRecord::FASTARecord(fasta) => &fasta.sequence,
+        GENRecord::FASTQRecord(fastq) => &fastq.sequence,
     };
 
     let gc_count = sequence.chars().filter(|c| *c == 'g' || *c =='c' || *c == 'G' || *c == 'C').count();

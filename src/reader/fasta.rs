@@ -1,6 +1,5 @@
 use std::fs::File;
-use std::io::{self, BufRead, Result};
-use std::collections::HashMap;
+use std::io::{self, BufRead};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FASTARecord {
@@ -14,10 +13,7 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<Vec<FASTARecord>> {
 
     let mut id: String = String::new();
     let mut sequence: String = String::new();
-
     let mut sequences_total: Vec<FASTARecord> = Vec::new();
-    //let mut sequences_search: HashMap<String, String> = HashMap::new();
-    let mut total_sequences: usize = 0;
 
     for line in reader.lines() {
         let each_line = line?;
@@ -31,7 +27,6 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<Vec<FASTARecord>> {
                     sequence: sequence.clone()
                 };
                 sequences_total.push(new_struct);
-                total_sequences += 1;
 
                 id = String::new();
             }

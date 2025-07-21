@@ -1,5 +1,6 @@
 mod reader {
     pub mod fasta;
+    pub mod fastq;
     pub mod gc_content;
 }
 
@@ -67,13 +68,19 @@ fn main() {
                     if let Ok(_result) = reader::fasta::parse_fasta_file(&args.input) {
                         println!("Successfully ran {:?}", _result);
                         for each_seq in _result.iter() {
-                            let ourRec = GENRecord::FASTARecord(each_seq.clone());
-                            println!("This is{:?}", calculate_gc_content(&ourRec));
+                            let our_record = GENRecord::FASTARecord(each_seq.clone());
+                            println!("GC content is{:?}%", calculate_gc_content(&our_record));
                         }
                     }
                 }
                 Format::Fastq => {
-                    println!("Not implemented yet :(")
+                    if let Ok(_result) = reader::fastq::parse_fastq_file(&args.input) {
+                        println!("Successfully ran {:?}", _result);
+                        for each_seq in _result.iter() {
+                            let our_record = GENRecord::FASTQRecord(each_seq.clone());
+                            println!("GC content is{:?}%", calculate_gc_content(&our_record));
+                        }
+                    }
                 }
             }
         }
