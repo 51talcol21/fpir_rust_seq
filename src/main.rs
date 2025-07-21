@@ -5,6 +5,7 @@ mod reader {
 }
 
 use clap::Parser;
+use reader::fastq::SequenceINFO;
 use std::str::FromStr;
 use std::fmt;
 
@@ -35,6 +36,22 @@ impl std::fmt::Display for Format {
             Format::Fastq => "FASTQ",
         };
         write!(f, "{}", s)
+    }
+}
+
+impl fmt::Display for SequenceINFO {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "---Sequence Information--")?;
+        writeln!(f, "Min Length: {}nt", self.sequences_min)?;
+        writeln!(f, "Max Length: {}nt", self.sequences_max)?;
+        writeln!(f, "Mean Length: {}nt", self.sequences_mean)?;
+        writeln!(f, "--------Sequences--------")?;
+
+        for record in &self.sequences {
+            writeln!(f, "{}", record)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -90,10 +107,7 @@ fn main() {
                                 println!("GC content for Record (ID: {}) is {:.2}%", rec.id, gc_percent);
                             }
                         }
-                        println!("Final Stats");
-                        println!("Mean: {:?}nt", result.sequences_mean);
-                        println!("Min: {:?}nt", result.sequences_min);
-                        println!("Max: {:?}nt", result.sequences_max);
+                        println!("{}", result);
                     }
                 }
                 Format::Fastq => {
@@ -106,10 +120,7 @@ fn main() {
                                 println!("GC content for Record (ID: {}) is {:.2}%", rec.id, gc_percent);
                             }
                         }
-                        println!("Final Stats");
-                        println!("Mean: {:?}nt", result.sequences_mean);
-                        println!("Min: {:?}nt", result.sequences_min);
-                        println!("Max: {:?}nt", result.sequences_max);
+                        println!("{}", result);
                     }
                 }
             }

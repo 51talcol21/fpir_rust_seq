@@ -1,4 +1,5 @@
 use std::cmp::{max, min};
+use std::fmt;
 use std::fs::File;
 use std::io::{self, BufRead};
 
@@ -11,45 +12,47 @@ pub struct FASTARecord {
     pub sequence: String,
 }
 
+impl std::fmt::Display for FASTARecord {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Sequence ID:'{}' \n Sequence:'{}", self.id, self.sequence)
+    }
+}
+
 pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
     let file = File::open(path).expect("File is unable to be opened.");
     let reader = io::BufReader::new(file);
+    let mut lines = reader.lines();
 
-    let mut id: String = String::new();
     let mut sequence: String = String::new();
     let mut sequences_total: Vec<FASTARecord> = Vec::new();
     let mut max_sequence_len = i64::MIN;
     let mut min_sequence_len = i64::MAX;
     let mut mean_sequence_len = 0;
+    let mut id: String = String::new();
 
-    for line in reader.lines() {
-        let each_line = line?;
-
-        if each_line.starts_with(">") {
-            // Is start of new sequence, but prior sequence in there.
-            // Append prior sequence.
+    while let Some(Ok(line)) = lines.next() {
+        if line.starts_with(">") {
             if !id.is_empty() {
                 let new_struct = FASTARecord {
-                    id,
+                    id: id.clone(),
                     sequence: sequence.clone()
                 };
                 sequences_total.push(new_struct);
                 max_sequence_len = max(max_sequence_len, sequence.len() as i64);
                 min_sequence_len = min(min_sequence_len, sequence.len() as i64);
                 mean_sequence_len = (mean_sequence_len + sequence.len()) / sequences_total.len();
-
-                id = String::new();
+    
+                sequence.clear();
             }
-
-            id = each_line[1..].trim().to_string();
-            sequence.clear();
-
-        } else {
-            sequence.push_str(&each_line);
+            id = line[1..].trim().to_string();
+        }
+        else {
+            sequence.push_str(&line);
         }
     }
+
     let new_struct = FASTARecord {
-        id,
+        id: id.clone(),
         sequence: sequence.clone()
     };
     sequences_total.push(new_struct);

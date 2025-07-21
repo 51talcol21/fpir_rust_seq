@@ -1,9 +1,19 @@
 use super::{fasta::FASTARecord, fastq::{FASTQRecord}};
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GENRecord {
     FASTARecord(FASTARecord),
     FASTQRecord(FASTQRecord)
+}
+
+impl std::fmt::Display for GENRecord {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            GENRecord::FASTARecord(s) => write!(f, "{}", s),
+            GENRecord::FASTQRecord(s) => write!(f, "{}", s)
+        }
+    }
 }
 
 pub fn calculate_gc_content(record: &GENRecord) -> f64 {
