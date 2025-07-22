@@ -7,6 +7,15 @@ pub enum GENRecord {
     FASTQRecord(FASTQRecord)
 }
 
+impl GENRecord {
+    pub fn by_sequence_length(&self) -> usize {
+        match self {
+            GENRecord::FASTARecord(seq) => seq.sequence.len(),
+            GENRecord::FASTQRecord(seq) => seq.sequence.len(),
+        }
+    }
+}
+
 impl std::fmt::Display for GENRecord {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

@@ -58,6 +58,7 @@ impl fmt::Display for ReadLengthStatistics {
         writeln!(f, "Min Length: {}nt", self.sequences_min)?;
         writeln!(f, "Max Length: {}nt", self.sequences_max)?;
         writeln!(f, "Mean Length: {}nt", self.sequences_mean)?;
+        writeln!(f, "Median Length: {}nt", self.sequences_median)?;
 
         Ok(())
     }

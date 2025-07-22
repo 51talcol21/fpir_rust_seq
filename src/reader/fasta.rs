@@ -85,15 +85,20 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
     min_sequence_len = min(min_sequence_len, sequence.len() as i64);
     mean_sequence_len = (mean_sequence_len + sequence.len()) / sequences_total.len();
 
-    let sequences_genrecord: Vec<GENRecord> = sequences_total
+    let mut sequences_genrecord: Vec<GENRecord> = sequences_total
         .into_iter()
         .map(|rec| rec)
         .collect();
+
+    let sequences_len = sequences_genrecord.len();
+    sequences_genrecord.select_nth_unstable_by(sequences_len / 2, |sec_a, seq_b| sec_a.by_sequence_length().cmp(&seq_b.by_sequence_length()));
+    let median = &sequences_genrecord[sequences_genrecord.len() / 2].by_sequence_length();
 
     let sequence_statistic_struct = ReadLengthStatistics {
         sequences_min: min_sequence_len,
         sequences_max: max_sequence_len,
         sequences_mean: mean_sequence_len,
+        sequences_median: *median,
     };
 
     let sequence_struct = SequenceINFO {
