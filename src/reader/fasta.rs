@@ -3,7 +3,7 @@ use std::fmt;
 use std::fs::File;
 use std::io::{self, BufRead};
 
-use super::fastq::SequenceINFO;
+use super::fastq::{SequenceINFO, ReadLengthStatistics};
 use super::gc_content::{GENRecord, calculate_gc_content};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -11,6 +11,7 @@ pub struct FASTARecord {
     pub id: String,
     pub sequence: String,
     pub gc_percent: Percent,
+    pub gc_count: usize,
 }
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub struct Percent(pub u32);
@@ -42,10 +43,12 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
     while let Some(Ok(line)) = lines.next() {
         if line.starts_with(">") {
             if !id.is_empty() {
+                let gc_count = sequence.chars().filter(|c| *c == 'g' || *c =='c' || *c == 'G' || *c == 'C').count();
                 let mut new_struct = FASTARecord {
                     id: id.clone(),
                     sequence: sequence.clone(),
-                    gc_percent: Percent(0 as u32)
+                    gc_percent: Percent(0 as u32),
+                    gc_count,
                 };
                 new_struct.gc_percent = Percent((calculate_gc_content(&GENRecord::FASTARecord(new_struct.clone())) * 1000.00) as u32);
                 sequences_total.push(GENRecord::FASTARecord(new_struct));
@@ -62,10 +65,12 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
         }
     }
 
+    let gc_count = sequence.chars().filter(|c| *c == 'g' || *c =='c' || *c == 'G' || *c == 'C').count();
     let new_struct = FASTARecord {
         id: id.clone(),
         sequence: sequence.clone(),
         gc_percent: Percent(0 as u32),
+        gc_count,
     };
     sequences_total.push(GENRecord::FASTARecord(new_struct));
     max_sequence_len = max(max_sequence_len, sequence.len() as i64);
@@ -77,11 +82,33 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
         .map(|rec| rec)
         .collect();
 
-    let sequence_struct = SequenceINFO {
-        sequences: sequences_genrecord,
+    let sequence_statistic_struct = ReadLengthStatistics {
         sequences_min: min_sequence_len,
         sequences_max: max_sequence_len,
         sequences_mean: mean_sequence_len,
+    };
+
+    let mut global_gc_count = 0;
+    let mut total_nucleotides = 0;
+    for each_sequence in &sequences_genrecord {
+        // Gonna have to refactor becuase of this! Why did I use GENRecord in the vector? 
+        match each_sequence {
+            GENRecord::FASTARecord(rec) =>  {
+                global_gc_count += rec.gc_count;
+                total_nucleotides += rec.sequence.len();
+            },
+            GENRecord::FASTQRecord(rec) =>  {
+                global_gc_count += rec.gc_count;
+                total_nucleotides += rec.sequence.len();
+            },
+        }
+    }
+
+    let sequence_struct = SequenceINFO {
+        sequences: sequences_genrecord,
+        read_length_statistics: sequence_statistic_struct,
+        global_gc_count,
+        total_nucleotides,
     };
 
     Ok(sequence_struct)

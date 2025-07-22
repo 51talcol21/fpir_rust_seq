@@ -12,6 +12,7 @@ pub struct FASTQRecord {
     pub sequence: String,
     pub quality: String,
     pub gc_percent: Percent,
+    pub gc_count: usize,
 }
 
 impl std::fmt::Display for FASTQRecord {
@@ -22,6 +23,12 @@ impl std::fmt::Display for FASTQRecord {
 
 pub struct SequenceINFO {
     pub sequences: Vec<GENRecord>,
+    pub read_length_statistics: ReadLengthStatistics,
+    pub global_gc_count: usize,
+    pub total_nucleotides: usize,
+}
+
+pub struct ReadLengthStatistics {
     pub sequences_min: i64,
     pub sequences_max: i64,
     pub sequences_mean: usize,
@@ -46,11 +53,13 @@ pub fn parse_fastq_file(path: &str) -> std::io::Result<SequenceINFO> {
                 if seq_line == "+" {
                     if let Some(Ok(seq_line)) = lines.next() {
                         let mut quality = seq_line[..].trim().to_string();
+                        let gc_count = sequence.chars().filter(|c| *c == 'g' || *c =='c' || *c == 'G' || *c == 'C').count();
                         let mut new_struct = FASTQRecord {
                             id: id.clone(),
                             sequence: sequence.clone(),
                             quality: quality.clone(),
                             gc_percent: Percent(0),
+                            gc_count,
                         };
                         new_struct.gc_percent = Percent((calculate_gc_content(&GENRecord::FASTQRecord(new_struct.clone())) * 1000.00) as u32);
                         sequences_total.push(GENRecord::FASTQRecord(new_struct));
@@ -74,11 +83,33 @@ pub fn parse_fastq_file(path: &str) -> std::io::Result<SequenceINFO> {
         .map(|rec| rec)
         .collect();
 
-    let sequence_struct = SequenceINFO {
-        sequences: sequences_genrecord,
+    let sequence_statistic_struct = ReadLengthStatistics {
         sequences_min: min_sequence_len,
         sequences_max: max_sequence_len,
         sequences_mean: mean_sequence_len,
+    };
+
+    let mut global_gc_count = 0;
+    let mut total_nucleotides = 0;
+    for each_sequence in &sequences_genrecord {
+        // Gonna have to refactor becuase of this! Why did I use GENRecord in the vector? 
+        match each_sequence {
+            GENRecord::FASTARecord(rec) =>  {
+                global_gc_count += rec.gc_count;
+                total_nucleotides += rec.sequence.len();
+            },
+            GENRecord::FASTQRecord(rec) =>  {
+                global_gc_count += rec.gc_count;
+                total_nucleotides += rec.sequence.len();
+            },
+        }
+    }
+
+    let sequence_struct = SequenceINFO {
+        sequences: sequences_genrecord,
+        read_length_statistics: sequence_statistic_struct,
+        global_gc_count,
+        total_nucleotides,
     };
 
     Ok(sequence_struct)
