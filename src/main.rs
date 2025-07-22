@@ -155,7 +155,7 @@ fn write_output(records: &SequenceINFO, options: &OutputInfo) -> std::io::Result
                     writeln!(output, "{} : {}", record.id, record.sequence)?;
                 }
                 GENRecord::FASTQRecord(record) => {
-                    writeln!(output, "{} : {}", record.id, record.sequence)?;
+                    writeln!(output, "{} : {} : {}", record.id, record.sequence, record.quality)?;
                 }
             }
         }

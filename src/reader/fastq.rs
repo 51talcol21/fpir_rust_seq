@@ -46,6 +46,9 @@ pub fn parse_fastq_file(path: &str) -> std::io::Result<SequenceINFO> {
     let mut min_sequence_len = i64::MAX;
     let mut mean_sequence_len = 0;
 
+    let mut global_gc_count = 0;
+    let mut total_nucleotides = 0;
+
     while let Some(Ok(line)) = lines.next() {
         if line.starts_with("@") {
             let mut id = line[1..].trim().to_string();
@@ -54,6 +57,7 @@ pub fn parse_fastq_file(path: &str) -> std::io::Result<SequenceINFO> {
                     if let Some(Ok(seq_line)) = lines.next() {
                         let mut quality = seq_line[..].trim().to_string();
                         let gc_count = sequence.chars().filter(|c| *c == 'g' || *c =='c' || *c == 'G' || *c == 'C').count();
+
                         let mut new_struct = FASTQRecord {
                             id: id.clone(),
                             sequence: sequence.clone(),
@@ -61,6 +65,9 @@ pub fn parse_fastq_file(path: &str) -> std::io::Result<SequenceINFO> {
                             gc_percent: Percent(0),
                             gc_count,
                         };
+
+                        total_nucleotides += sequence.len();
+                        global_gc_count += gc_count;
                         new_struct.gc_percent = Percent((calculate_gc_content(&GENRecord::FASTQRecord(new_struct.clone())) * 1000.00) as u32);
                         sequences_total.push(GENRecord::FASTQRecord(new_struct));
                         max_sequence_len = max(max_sequence_len, sequence.len() as i64);
@@ -88,22 +95,6 @@ pub fn parse_fastq_file(path: &str) -> std::io::Result<SequenceINFO> {
         sequences_max: max_sequence_len,
         sequences_mean: mean_sequence_len,
     };
-
-    let mut global_gc_count = 0;
-    let mut total_nucleotides = 0;
-    for each_sequence in &sequences_genrecord {
-        // Gonna have to refactor becuase of this! Why did I use GENRecord in the vector? 
-        match each_sequence {
-            GENRecord::FASTARecord(rec) =>  {
-                global_gc_count += rec.gc_count;
-                total_nucleotides += rec.sequence.len();
-            },
-            GENRecord::FASTQRecord(rec) =>  {
-                global_gc_count += rec.gc_count;
-                total_nucleotides += rec.sequence.len();
-            },
-        }
-    }
 
     let sequence_struct = SequenceINFO {
         sequences: sequences_genrecord,

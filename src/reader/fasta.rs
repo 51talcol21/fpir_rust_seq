@@ -40,10 +40,15 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
     let mut mean_sequence_len = 0;
     let mut id: String = String::new();
 
+    let mut global_gc_count = 0;
+    let mut total_nucleotides = 0;
+
     while let Some(Ok(line)) = lines.next() {
         if line.starts_with(">") {
             if !id.is_empty() {
                 let gc_count = sequence.chars().filter(|c| *c == 'g' || *c =='c' || *c == 'G' || *c == 'C').count();
+                global_gc_count += gc_count;
+                total_nucleotides += sequence.len();
                 let mut new_struct = FASTARecord {
                     id: id.clone(),
                     sequence: sequence.clone(),
@@ -72,6 +77,9 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
         gc_percent: Percent(0 as u32),
         gc_count,
     };
+
+    global_gc_count += gc_count;
+    total_nucleotides += sequence.len();
     sequences_total.push(GENRecord::FASTARecord(new_struct));
     max_sequence_len = max(max_sequence_len, sequence.len() as i64);
     min_sequence_len = min(min_sequence_len, sequence.len() as i64);
@@ -87,22 +95,6 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
         sequences_max: max_sequence_len,
         sequences_mean: mean_sequence_len,
     };
-
-    let mut global_gc_count = 0;
-    let mut total_nucleotides = 0;
-    for each_sequence in &sequences_genrecord {
-        // Gonna have to refactor becuase of this! Why did I use GENRecord in the vector? 
-        match each_sequence {
-            GENRecord::FASTARecord(rec) =>  {
-                global_gc_count += rec.gc_count;
-                total_nucleotides += rec.sequence.len();
-            },
-            GENRecord::FASTQRecord(rec) =>  {
-                global_gc_count += rec.gc_count;
-                total_nucleotides += rec.sequence.len();
-            },
-        }
-    }
 
     let sequence_struct = SequenceINFO {
         sequences: sequences_genrecord,
