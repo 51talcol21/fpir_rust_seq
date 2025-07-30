@@ -3,6 +3,8 @@ use std::fmt;
 use std::fs::File;
 use std::io::{self, BufRead};
 
+use crate::ProcessingValues;
+
 use super::fastq::{SequenceINFO, ReadLengthStatistics};
 use super::gc_content::{GENRecord, calculate_gc_content};
 
@@ -28,7 +30,7 @@ impl std::fmt::Display for Percent {
     }
 }
 
-pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
+pub fn parse_fasta_file(path: &str, input_flags: &ProcessingValues) -> std::io::Result<SequenceINFO> {
     let file = File::open(path).expect("File is unable to be opened.");
     let reader = io::BufReader::new(file);
     let mut lines = reader.lines();
@@ -46,6 +48,10 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
     while let Some(Ok(line)) = lines.next() {
         if line.starts_with(">") {
             if !id.is_empty() {
+                if sequence.len() < input_flags.min_length || sequence.len() > input_flags.max_length {
+                    sequence.clear();
+                    continue
+                }
                 let gc_count = sequence.chars().filter(|c| *c == 'g' || *c =='c' || *c == 'G' || *c == 'C').count();
                 global_gc_count += gc_count;
                 total_nucleotides += sequence.len();
@@ -70,20 +76,22 @@ pub fn parse_fasta_file(path: &str) -> std::io::Result<SequenceINFO> {
         }
     }
 
-    let gc_count = sequence.chars().filter(|c| *c == 'g' || *c =='c' || *c == 'G' || *c == 'C').count();
-    let new_struct = FASTARecord {
-        id: id.clone(),
-        sequence: sequence.clone(),
-        gc_percent: Percent(0 as u32),
-        gc_count,
-    };
-
-    global_gc_count += gc_count;
-    total_nucleotides += sequence.len();
-    sequences_total.push(GENRecord::FASTARecord(new_struct));
-    max_sequence_len = max(max_sequence_len, sequence.len() as i64);
-    min_sequence_len = min(min_sequence_len, sequence.len() as i64);
-    mean_sequence_len = (mean_sequence_len + sequence.len()) / sequences_total.len();
+    if sequence.len() > input_flags.min_length || sequence.len() > input_flags.max_length {
+        let gc_count = sequence.chars().filter(|c| *c == 'g' || *c =='c' || *c == 'G' || *c == 'C').count();
+        let new_struct = FASTARecord {
+            id: id.clone(),
+            sequence: sequence.clone(),
+            gc_percent: Percent(0 as u32),
+            gc_count,
+        };
+    
+        global_gc_count += gc_count;
+        total_nucleotides += sequence.len();
+        sequences_total.push(GENRecord::FASTARecord(new_struct));
+        max_sequence_len = max(max_sequence_len, sequence.len() as i64);
+        min_sequence_len = min(min_sequence_len, sequence.len() as i64);
+        mean_sequence_len = (mean_sequence_len + sequence.len()) / sequences_total.len();
+    }
 
     let mut sequences_genrecord: Vec<GENRecord> = sequences_total
         .into_iter()

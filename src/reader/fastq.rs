@@ -3,6 +3,8 @@ use std::fs::File;
 use std::fmt;
 use std::io::{self, BufRead};
 
+use crate::ProcessingValues;
+
 use super::fasta::Percent;
 use super::gc_content::{GENRecord, calculate_gc_content};
 
@@ -35,7 +37,7 @@ pub struct ReadLengthStatistics {
     pub sequences_median: usize,
 }
 
-pub fn parse_fastq_file(path: &str) -> std::io::Result<SequenceINFO> {
+pub fn parse_fastq_file(path: &str, input_flags: &ProcessingValues) -> std::io::Result<SequenceINFO> {
     let file = File::open(path).expect("File is unable to be opened.");
     let reader = io::BufReader::new(file);
     let mut lines = reader.lines();
@@ -50,12 +52,16 @@ pub fn parse_fastq_file(path: &str) -> std::io::Result<SequenceINFO> {
     let mut global_gc_count = 0;
     let mut total_nucleotides = 0;
 
-    while let Some(Ok(line)) = lines.next() {
+    'each_seq: while let Some(Ok(line)) = lines.next() {
         if line.starts_with("@") {
             let mut id = line[1..].trim().to_string();
             while let Some(Ok(seq_line)) = lines.next() {
                 if seq_line == "+" {
                     if let Some(Ok(seq_line)) = lines.next() {
+                        if sequence.len() < input_flags.min_length || sequence.len() > input_flags.max_length {
+                            sequence.clear();
+                            continue 'each_seq;
+                        }
                         let mut quality = seq_line[..].trim().to_string();
                         let gc_count = sequence.chars().filter(|c| *c == 'g' || *c =='c' || *c == 'G' || *c == 'C').count();
 

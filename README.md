@@ -2,13 +2,6 @@
 
 fpir, or 'FastX Parser In Rust' is a lightweight, fast, and extensible command-line tool written in Rust for parsing and analyzing FASTA and FASTQ files.
 
-- Parse FASTA and FASTQ files
-- Compute per-sequence GC content
-- Compute global GC content across all reads
-- Calculate basic read length statistics:
-  - Mean read length
-  - Max read length
-- Clean, scriptable command-line interface (CLI)
 
 ## Current Features (so far)
 
@@ -18,14 +11,18 @@ fpir, or 'FastX Parser In Rust' is a lightweight, fast, and extensible command-l
 - Calculate basic read length statistics:
   - Mean read length
   - Max read length
+  - Median read length
+  - N50
+- Filtering capabilities
+  - Min read length
+  - Max read length
 - Clean, scriptable command-line interface (CLI)
 
 ## Planned Features
 
 - More error checking for misformed files/cut off sequences.
 - Output in different formats (CSV).
-- Median, N50 for fasta.
-- Filtering on min/max length, gc content, min quality on fastq.
+- Filtering on gc content and min quality on fastq.
 - Quality score stats 
 - Base counts for global and per sequence
 - Random subsampling
