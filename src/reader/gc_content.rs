@@ -1,4 +1,4 @@
-use super::{fasta::FASTARecord, fastq::{FASTQRecord}};
+use super::{fasta::FASTARecord, fastq::{FASTQRecord, SequenceINFO}};
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,4 +37,17 @@ pub fn calculate_gc_content(record: &GENRecord) -> f64 {
         _ => (gc_count as f64) / (sequence.len() as f64) * 100.0
     };
     gc_percent
+}
+
+pub fn calculate_n50_score(sequences: &mut SequenceINFO) -> usize {
+    // Sort by sequence length
+    sequences.sequences.sort_by(|a, b| b.by_sequence_length().cmp(&a.by_sequence_length()));
+    let mut cumulative = 0;
+    for each_seq in sequences.sequences.iter() {
+        cumulative += each_seq.by_sequence_length();
+        if cumulative >= sequences.total_nucleotides / 2 {
+            return each_seq.by_sequence_length();
+        }
+    }
+    0
 }

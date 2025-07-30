@@ -6,6 +6,7 @@ mod reader {
 
 use clap::Parser;
 use reader::fastq::{SequenceINFO, ReadLengthStatistics};
+use reader::gc_content::calculate_n50_score;
 use std::io::{Write, BufWriter};
 use std::{str::FromStr, fs::File};
 use std::fmt;
@@ -94,6 +95,9 @@ struct Args {
     /// Output file path
     #[arg(long)]
     output: Option<String>,
+
+    #[arg(long)]
+    show_n50: bool,
 }
 
 fn detect_format_from_filename(filename: &str) -> Option<&'static str> {
@@ -113,9 +117,10 @@ pub struct OutputInfo {
     pub show_gc_per_sequence: bool,
     pub show_sequences: bool,
     pub show_read_statistics: bool,
+    pub show_n50: bool,
 }
 
-fn write_output(records: &SequenceINFO, options: &OutputInfo) -> std::io::Result<()> {
+fn write_output(records: &mut SequenceINFO, options: &OutputInfo) -> std::io::Result<()> {
     let output_file = File::create(options.output_file_name.clone()).expect("File creation failed");
     let mut output = BufWriter::new(output_file);
 
@@ -162,6 +167,11 @@ fn write_output(records: &SequenceINFO, options: &OutputInfo) -> std::io::Result
         }
     }
 
+    if options.show_n50 {
+        writeln!(output, "\n-----------------N50----------------")?;
+        writeln!(output, "N50 value: {}", calculate_n50_score(records))?;
+    }
+
     Ok(())
 }
 
@@ -181,7 +191,8 @@ fn main() {
         show_gc_global: args.gc_global,
         show_gc_per_sequence: args.gc_per_sequence,
         show_read_statistics: args.show_read_statistics,
-        show_sequences: args.show_sequences
+        show_sequences: args.show_sequences,
+        show_n50: args.show_n50
     };
 
     let format = if let Some(fmt) = args.format {
@@ -200,13 +211,13 @@ fn main() {
         Ok(result) => {
             match result {
                 Format::Fasta => {
-                    if let Ok(result) = reader::fasta::parse_fasta_file(&args.input) {
-                        write_output(&result, &output_flags).expect("Unable to write to file");
+                    if let Ok(mut result) = reader::fasta::parse_fasta_file(&args.input) {
+                        write_output(&mut result, &output_flags).expect("Unable to write to file");
                     }
                 }
                 Format::Fastq => {
-                    if let Ok(result) = reader::fastq::parse_fastq_file(&args.input) {
-                        write_output(&result, &output_flags).expect("Unable to write to file");
+                    if let Ok(mut result) = reader::fastq::parse_fastq_file(&args.input) {
+                        write_output(&mut result, &output_flags).expect("Unable to write to file");
                     }
                 }
             }

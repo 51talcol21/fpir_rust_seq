@@ -93,8 +93,8 @@ pub fn parse_fastq_file(path: &str) -> std::io::Result<SequenceINFO> {
 
     let sequences_len = sequences_genrecord.len();
     sequences_genrecord.select_nth_unstable_by(sequences_len / 2, |sec_a, seq_b| sec_a.by_sequence_length().cmp(&seq_b.by_sequence_length()));
-
     let median = &sequences_genrecord[sequences_genrecord.len() / 2].by_sequence_length();
+    
     let sequence_statistic_struct = ReadLengthStatistics {
         sequences_min: min_sequence_len,
         sequences_max: max_sequence_len,
