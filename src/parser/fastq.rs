@@ -5,8 +5,8 @@ use std::io::{self, BufRead};
 
 use crate::ProcessingValues;
 
-use super::fasta::Percent;
-use super::gc_content::{GENRecord, calculate_gc_content};
+use super::stats::calculate_gc_content;
+use super::genrecord::{GENRecord, SequenceINFO, ReadLengthStatistics, Percent};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FASTQRecord {
@@ -23,20 +23,6 @@ impl std::fmt::Display for FASTQRecord {
     }
 }
 
-pub struct SequenceINFO {
-    pub sequences: Vec<GENRecord>,
-    pub read_length_statistics: ReadLengthStatistics,
-    pub global_gc_count: usize,
-    pub total_nucleotides: usize,
-}
-
-pub struct ReadLengthStatistics {
-    pub sequences_min: i64,
-    pub sequences_max: i64,
-    pub sequences_mean: usize,
-    pub sequences_median: usize,
-}
-
 pub fn parse_fastq_file(path: &str, input_flags: &ProcessingValues) -> std::io::Result<SequenceINFO> {
     let file = File::open(path).expect("File is unable to be opened.");
     let reader = io::BufReader::new(file);
@@ -47,7 +33,6 @@ pub fn parse_fastq_file(path: &str, input_flags: &ProcessingValues) -> std::io::
     let mut sequences_total: Vec<GENRecord> = Vec::new();
     let mut max_sequence_len = i64::MIN;
     let mut min_sequence_len = i64::MAX;
-    let mut mean_sequence_len = 0;
 
     let mut global_gc_count = 0;
     let mut total_nucleotides = 0;
@@ -79,7 +64,6 @@ pub fn parse_fastq_file(path: &str, input_flags: &ProcessingValues) -> std::io::
                         sequences_total.push(GENRecord::FASTQRecord(new_struct));
                         max_sequence_len = max(max_sequence_len, sequence.len() as i64);
                         min_sequence_len = min(min_sequence_len, sequence.len() as i64);
-                        mean_sequence_len = (mean_sequence_len + sequence.len()) / sequences_total.len();
             
                         sequence.clear();
                         quality.clear();
@@ -100,6 +84,7 @@ pub fn parse_fastq_file(path: &str, input_flags: &ProcessingValues) -> std::io::
     let sequences_len = sequences_genrecord.len();
     sequences_genrecord.select_nth_unstable_by(sequences_len / 2, |sec_a, seq_b| sec_a.by_sequence_length().cmp(&seq_b.by_sequence_length()));
     let median = &sequences_genrecord[sequences_genrecord.len() / 2].by_sequence_length();
+    let mean_sequence_len = total_nucleotides / sequences_genrecord.len();
     
     let sequence_statistic_struct = ReadLengthStatistics {
         sequences_min: min_sequence_len,

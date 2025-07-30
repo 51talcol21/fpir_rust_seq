@@ -1,17 +1,16 @@
-mod reader {
+mod parser {
     pub mod fasta;
     pub mod fastq;
-    pub mod gc_content;
+    pub mod stats;
+    pub mod genrecord;
 }
 
 use clap::Parser;
-use reader::fastq::{SequenceINFO, ReadLengthStatistics};
-use reader::gc_content::calculate_n50_score;
+use parser::stats::calculate_n50_score;
+use parser::genrecord::{GENRecord, SequenceINFO, ReadLengthStatistics};
 use std::io::{Write, BufWriter};
 use std::{str::FromStr, fs::File};
 use std::fmt;
-
-use crate::reader::gc_content::{GENRecord};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {
@@ -235,12 +234,12 @@ fn main() {
         Ok(result) => {
             match result {
                 Format::Fasta => {
-                    if let Ok(mut result) = reader::fasta::parse_fasta_file(&args.input, &input_flags) {
+                    if let Ok(mut result) = parser::fasta::parse_fasta_file(&args.input, &input_flags) {
                         write_output(&mut result, &output_flags, &input_flags).expect("Unable to write to file");
                     }
                 }
                 Format::Fastq => {
-                    if let Ok(mut result) = reader::fastq::parse_fastq_file(&args.input, &input_flags) {
+                    if let Ok(mut result) = parser::fastq::parse_fastq_file(&args.input, &input_flags) {
                         write_output(&mut result, &output_flags, &input_flags).expect("Unable to write to file");
                     }
                 }

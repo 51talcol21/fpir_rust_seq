@@ -1,29 +1,4 @@
-use super::{fasta::FASTARecord, fastq::{FASTQRecord, SequenceINFO}};
-use std::fmt;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum GENRecord {
-    FASTARecord(FASTARecord),
-    FASTQRecord(FASTQRecord)
-}
-
-impl GENRecord {
-    pub fn by_sequence_length(&self) -> usize {
-        match self {
-            GENRecord::FASTARecord(seq) => seq.sequence.len(),
-            GENRecord::FASTQRecord(seq) => seq.sequence.len(),
-        }
-    }
-}
-
-impl std::fmt::Display for GENRecord {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            GENRecord::FASTARecord(s) => write!(f, "{}", s),
-            GENRecord::FASTQRecord(s) => write!(f, "{}", s)
-        }
-    }
-}
+use super::genrecord::{GENRecord, SequenceINFO};
 
 pub fn calculate_gc_content(record: &GENRecord) -> f64 {
     let sequence = match record {
